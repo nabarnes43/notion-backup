@@ -1,0 +1,30 @@
+name: Notion Backup
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Daily at midnight
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4  # Added to access workspace
+      
+      - uses: kohlerdominik/docker-run-action@v1
+        with:
+          image: ghcr.io/jckleiner/notion-backup
+          options: |
+            -v ${{ github.workspace }}/backups:/downloads
+          environment: |
+            NOTION_SPACE_ID: ${{ secrets.NOTION_SPACE_ID }}
+            NOTION_TOKEN_V2: ${{ secrets.NOTION_TOKEN_V2 }}
+            NOTION_EXPORT_TYPE: markdown
+            NOTION_FLATTEN_EXPORT_FILETREE: true
+            NOTION_EXPORT_COMMENTS: true
+
+      # Save the backups as artifacts
+      - uses: actions/upload-artifact@v3
+        with:
+          name: notion-backup-${{ github.run_number }}
+          path: backups/
+          retention-days: 90  # How long to keep backups
